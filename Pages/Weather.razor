@@ -1,0 +1,253 @@
+﻿@page "/weather"
+@layout MainLayout
+@inject HttpClient Http
+@using MudBlazor
+@inject NavigationManager Navigation
+
+<PageTitle>Weather Application</PageTitle>
+
+<div class="main-container mt-15">
+    <div class="header">
+        <h1>Welcome to the Weather Application</h1>
+    </div>
+
+    <div class="weather-input">
+        <h2 class="sub-title">Get Weather Information</h2>
+        <input type="text"
+               class="input-box"
+               placeholder="Enter the city name"
+               @bind="city"
+               @bind:event="oninput"
+               @onkeydown="HandleKeyPress" />
+
+        <div class="button-container">
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="GetWeather" Class=" mt-4">
+                <b>Get Weather</b>
+            </MudButton>
+        </div>
+        
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="forecast" Class=" mt-4">
+        <b>Weather Forecast</b>
+    </MudButton>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="error-message">@errorMessage</div>
+    }
+
+    @if (weather != null)
+    {
+        <div class="weather-card">
+            <h2 class="sub-title">Weather in @weather.Name</h2>
+            <p><strong>Local Time:</strong> @localTime</p>
+            <p><strong>Temperature:</strong> @weather.Main?.Temp &deg;C</p>
+            <p><strong>Weather:</strong> @weather.Weather?[0]?.Description</p>
+            <p><strong>Humidity:</strong> @weather.Main?.Humidity%</p>
+            <p><strong>Pressure:</strong> @weather.Main?.Pressure hPa</p>
+            <p><strong>Wind Speed:</strong> @weather.Wind?.Speed km/h</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(city))
+    {
+        <div class="loading-message">Loading weather data...</div>
+    }
+</div>
+
+<style>
+    /* Main Container Styles */
+    .main-container {
+        width: 100%;
+        max-width: 800px;
+        padding: 30px;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        margin: 20px auto;
+        font-family: 'Arial', sans-serif;
+        color: #fff;
+    }
+
+    /* Header Styles */
+    .header h1 {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #fff;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Input Field Styles */
+    .input-box {
+        width: 90%;
+        max-width: 520px;
+        height: 50px;
+        padding: 15px;
+        font-size: 1rem;
+        font-weight: 500;
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        background-color: rgb(229 227 233 / 96%);
+        color: #252525;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+
+        .input-box:focus {
+            border-color: #00aaff;
+            box-shadow: 0 5px 20px rgba(0, 170, 255, 0.6);
+        }
+
+    /* Button Styles */
+    .MudButton {
+        background-color: #00aaff;
+        color: #fff;
+        padding: 12px 24px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: transform 0.3s ease-in-out, background-color 0.3s ease;
+        border: none;
+    }
+
+        .MudButton:hover {
+            transform: translateY(-3px);
+            background-color: #0099cc;
+        }
+
+        .MudButton:active {
+            transform: translateY(1px);
+        }
+
+    /* Error Message Styles */
+    .error-message {
+        color: #ff3f3f;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-top: 20px;
+    }
+
+    /* Weather Card Styles */
+    .weather-card {
+        padding: 25px;
+        margin-top: 30px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        color: #fff;
+        text-align: left;
+    }
+
+        .weather-card h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .weather-card p {
+            font-size: 1.1rem;
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+
+        .weather-card strong {
+            color: #00aaff;
+        }
+
+    /* Loading Message Styles */
+    .loading-message {
+        font-size: 1.2rem;
+        color: #ddd;
+        margin-top: 20px;
+    }
+
+    .sub-title {
+        color: white;
+    }
+</style>
+@code {
+    private string city = string.Empty;
+    private string UserName= string.Empty;  // Store user's name
+    private WeatherResponse? weather;
+    private string localTime = string.Empty;
+    private string errorMessage = string.Empty;
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await GetWeather();
+        }
+    }
+	private void forecast()
+	{
+		Navigation.NavigateTo("/forecast");
+	}
+    private async Task GetWeather()
+    {
+        if (string.IsNullOrWhiteSpace(city))
+        {
+            errorMessage = "Please enter a valid city name.";
+            return;
+        }
+
+        try
+        {
+            string apiKey = "ae0256f4cc84c78906bacc7019637c24"; // Replace with your actual API key
+            string apiUrl = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={apiKey}&units=metric";
+
+            weather = await Http.GetFromJsonAsync<WeatherResponse>(apiUrl);
+
+            if (weather != null)
+            {
+                localTime = ConvertUnixToLocalTime(weather.Dt, weather.Timezone);
+                errorMessage = string.Empty;
+            }
+            else
+            {
+                errorMessage = "City not found.";
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "Error fetching weather data. Please try again.";
+        }
+    }
+
+    private string ConvertUnixToLocalTime(long unixTimestamp, int timezoneOffset)
+    {
+        var utcDateTime = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp).UtcDateTime;
+        var localDateTime = utcDateTime.AddSeconds(timezoneOffset);
+        return localDateTime.ToString("dddd, MMMM dd yyyy, HH:mm:ss");
+    }
+
+    public class WeatherResponse
+    {
+        public string? Name { get; set; }
+        public MainInfo? Main { get; set; }
+        public WindInfo? Wind { get; set; }
+        public List<WeatherInfo>? Weather { get; set; } = new();
+        public long Dt { get; set; }
+        public int Timezone { get; set; }
+    }
+
+    public class MainInfo
+    {
+        public double Temp { get; set; }
+        public double Humidity { get; set; }
+        public double Pressure { get; set; }
+    }
+
+    public class WindInfo
+    {
+        public double Speed { get; set; }
+    }
+
+    public class WeatherInfo
+    {
+        public string Main { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+}

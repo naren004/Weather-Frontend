@@ -1,0 +1,211 @@
+﻿@page "/"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@using MudBlazor
+@using System.Net.Http.Json
+
+<PageTitle>Welcome to Weather App</PageTitle>
+
+<div class="welcome-container mt-20">
+    <!-- Welcome Section -->
+    <div class="intro-section">
+        <h1 class="title">Welcome to SkySense Weather App</h1>
+        <p class="subtitle">Get accurate weather forecasts and save your favorite locations!</p>
+
+        <!-- Authentication Buttons -->
+        <div class="auth-buttons">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="NavigateToLogin">Login</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="NavigateToRegister">Register</MudButton>
+        </div>
+    </div>
+
+    <!-- Today's Weather Forecast Section -->
+@*     <div class="forecast-section"> *@
+@*         <h2>Today's Weather Forecast</h2> *@
+@*         @if (weather != null) *@
+@*         { *@
+@*             <MudCard Class="weather-card"> *@
+@*                 <div class="weather-info"> *@
+@*                     <p><strong>City:</strong> @weather.Name</p> *@
+@*                     <p><strong>Temperature:</strong> @weather.Main?.Temp &deg;C</p> *@
+@*                     <p><strong>Condition:</strong> @weather.Weather?[0]?.Description</p> *@
+@*                     <p><strong>Humidity:</strong> @weather.Main?.Humidity%</p> *@
+@*                     <p><strong>Wind Speed:</strong> @weather.Wind?.Speed km/h</p> *@
+@*                 </div> *@
+@*             </MudCard> *@
+@*         } *@
+@*     </div> *@
+
+@*     <!-- Favorite Locations Section --> *@
+@*     <div class="favorites-section"> *@
+@*         <h2>Favorite Locations</h2> *@
+@*         @if (favoriteCities.Any()) *@
+@*         { *@
+@*             <MudCard Class="favorites-card"> *@
+@*                 <ul> *@
+@*                     @foreach (var city in favoriteCities) *@
+@*                     { *@
+@*                         <li>@city <MudButton OnClick="() => RemoveFromFavorites(city)">Remove</MudButton></li> *@
+@*                     } *@
+@*                 </ul> *@
+@*             </MudCard> *@
+@*         } *@
+@*         else *@
+@*         { *@
+@*             <p>No favorite locations added yet.</p> *@
+@*         } *@
+@*     </div> *@
+
+@*     <!-- Extra Content Section --> *@
+@*     <div class="extra-content"> *@
+@*         <h2>Weather Tips & News</h2> *@
+@*         <p>Stay updated with the latest weather news and tips to prepare for any season.</p> *@
+@*     </div> *@
+</div>
+
+<style>
+    /* Main container styling */
+    .welcome-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        color: white;
+        transition: all 0.10s ease;
+    }
+
+    /* Title and Subtitle */
+    .title {
+        font-weight: 700;
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #252525;
+        transition: color 0.3s ease;
+    }
+
+    .subtitle {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        color: #252525;
+        transition: color 0.3s ease;
+    }
+
+    /* Authentication Buttons */
+    .auth-buttons {
+        display: flex;
+        align-items:center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 3rem;
+        
+    }
+
+    .auth-buttons button {
+                    transition: background-color 0.3s ease, transform 0.3s ease;
+
+                }
+    .auth-buttons button:hover {
+                background-color: white;
+                transform: translateY(-2px);
+            }
+
+    /* Weather Card Styling */
+    .weather-card, .favorites-card {
+        width: 100%;
+        max-width: 500px;
+        padding: 2rem;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        margin-bottom: 2rem;
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+
+        .weather-card:hover, .favorites-card:hover {
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+            transform: translateY(-5px);
+        }
+
+    .weather-info p {
+        font-size: 1.1rem;
+        margin: 8px 0;
+    }
+
+    .weather-info strong {
+        color: #1e3c72;
+    }
+
+    /* Favorite Locations List */
+    .favorites-section ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    .favorites-section li {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        font-size: 1.1rem;
+    }
+
+        .favorites-section li button {
+            background: transparent;
+            border: 1px solid #1e3c72;
+            color: #1e3c72;
+            transition: background 0.3s, color 0.3s;
+        }
+
+            .favorites-section li button:hover {
+                background: #1e3c72;
+                color: white;
+            }
+
+    /* Extra Content Styling */
+    .extra-content {
+        margin-top: 3rem;
+        font-size: 1.2rem;
+        text-align: center;
+        transition: opacity 0.3s ease;
+    }
+
+        .extra-content:hover {
+            opacity: 0.8;
+        }
+
+
+</style>
+
+@code {
+    private WeatherResponse? weather;
+    private List<string> favoriteCities = new();
+
+    private async Task GetWeather()
+    {
+        string apiKey = "ae0256f4cc84c78906bacc7019637c24";
+        string city = "New York"; // Default city for forecast
+        string apiUrl = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={apiKey}&units=metric";
+        weather = await Http.GetFromJsonAsync<WeatherResponse>(apiUrl);
+    }
+
+    private void NavigateToLogin() => Navigation.NavigateTo("/login");
+    private void NavigateToRegister() => Navigation.NavigateTo("/register");
+    private void RemoveFromFavorites(string city) => favoriteCities.Remove(city);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetWeather();
+    }
+
+    public class WeatherResponse
+    {
+        public string? Name { get; set; }
+        public MainInfo? Main { get; set; }
+        public List<WeatherInfo>? Weather { get; set; } = new();
+        public WindInfo? Wind { get; set; }
+    }
+
+    public class MainInfo { public double Temp { get; set; } public double Humidity { get; set; } }
+    public class WeatherInfo { public string Description { get; set; } = string.Empty; }
+    public class WindInfo { public double Speed { get; set; } }
+}
